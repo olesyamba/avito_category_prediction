@@ -2,3 +2,5 @@
 .idea/
 /results/
 /logs/
+/model_V1/
+/model*
