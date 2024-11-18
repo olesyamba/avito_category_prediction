@@ -22,7 +22,7 @@ synonym_aug = naw.SynonymAug(
 
 # Function to apply spell check correction
 def correct_spelling(tokens):
-    corrected_tokens = [spell.correction(token) if spell.unknown([token]) else token for token in tokens]
+    corrected_tokens = [(spell.correction(token) if spell.correction(token) is not None else token) if spell.unknown([token]) else token for token in tokens]
     return corrected_tokens
 
 
@@ -74,7 +74,7 @@ def advanced_preprocess_rus(text, remove_stopwords=True, lemmatize=True, expand_
         tokens = [word for word in tokens if word not in stop_words]
 
     # 10. Spell Correction (Optional)
-    if correct_spelling:
+    if correct_spell:
         tokens = correct_spelling(tokens)
 
     # 11. Lemmatization (Optional)
@@ -103,14 +103,60 @@ def advanced_preprocess_rus(text, remove_stopwords=True, lemmatize=True, expand_
     return preprocessed_text
 
 
-# Example Usage with Russian Text
-sample_text_ru = """
-рено меган 3
-"""
+def basic_preprocess_rus(text, remove_stopwords=True, lemmatize=True,
+                         remove_urls=True, correct_spell=False):
+    copy_text = text
+    # 1. Normalize Unicode Characters
+    text = unicodedata.normalize('NFKD', text)
 
-preprocessed_text_ru = advanced_preprocess_rus(
-    sample_text_ru, correct_spell=True, augment_text=False, add_ngrams=False, ngram_range=3
-)
+    # 3. Remove URLs
+    if remove_urls:
+        text = re.sub(r'http\S+|www.\S+', '', text)
 
-print(f"Original Text: {sample_text_ru}")
-print(f"Preprocessed Text: {preprocessed_text_ru}")
+    # 4. Remove Emails
+    text = re.sub(r'\S*@\S*\s?', '', text)
+
+    # 5. Remove Special Characters & Digits, retain words
+    text = re.sub(r'[^а-яА-ЯёЁ\s]', '', text)
+
+    # 6. Lowercase the text
+    text = text.lower()
+
+    # 7. Remove Repeated Characters (e.g., "уууу" -> "у")
+    text = re.sub(r'(.)\1{2,}', r'\1', text)
+
+    # 8. Tokenize the Text (using NLTK or any other tokenization library that works well with Russian)
+    tokens = word_tokenize(text)
+
+    # 9. Remove Stopwords (Optional)
+    if remove_stopwords:
+        tokens = [word for word in tokens if word not in stop_words]
+
+    # 10. Spell Correction (Optional)
+    if correct_spell:
+        tokens = correct_spelling(tokens)
+
+    # 11. Lemmatization (Optional)
+    if lemmatize:
+        tokens = lemmatize_russian(tokens)
+
+    # 12. Re-join tokens back to string format
+    preprocessed_text = ' '.join(tokens)
+
+    if preprocessed_text == '' or preprocessed_text is None:
+        return copy_text
+    else:
+        return preprocessed_text
+
+#
+# # Example Usage with Russian Text
+# sample_text_ru = """
+# рено меган 3
+# """
+#
+# preprocessed_text_ru = advanced_preprocess_rus(
+#     sample_text_ru, correct_spell=True, augment_text=False, add_ngrams=False, ngram_range=3
+# )
+#
+# print(f"Original Text: {sample_text_ru}")
+# print(f"Preprocessed Text: {preprocessed_text_ru}")
